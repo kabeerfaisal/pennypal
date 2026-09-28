@@ -1,0 +1,42 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+
+    function isAdmin() {
+      return signedIn() &&
+        exists(/databases/$(database)/documents/Users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/Users/$(request.auth.uid)).data.Role == 'Admin';
+    }
+
+    match /Users/{userId} {
+      allow read, create, update, delete: if isOwner(userId) || isAdmin();
+
+      match /{document=**} {
+        allow read, write: if isOwner(userId) || isAdmin();
+      }
+    }
+
+    match /LearningArticles/{articleId} {
+      allow read: if signedIn();
+      allow write: if isAdmin();
+    }
+
+    match /Feedbacks/{id} {
+      allow create: if signedIn() && request.resource.data.UserId == request.auth.uid;
+      allow read: if signedIn() && (resource.data.UserId == request.auth.uid || isAdmin());
+      // Admins reply to a query; the owner may still close their own thread.
+      allow update: if isAdmin()
+                    || (signedIn() && resource.data.UserId == request.auth.uid
+                        && request.resource.data.diff(resource.data)
+                             .affectedKeys().hasOnly(['Status']));
+      allow delete: if isAdmin();
+    }
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "215582096348",
+    "project_id": "pennypal-3b77b",
+    "storage_bucket": "pennypal-3b77b.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:215582096348:android:8d7b81775947f4b97ead19",
+        "android_client_info": {
+          "package_name": "com.example.penny_pal"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBj3aMqVL41X0QzGuh9KfxX68kto3eQK_A"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
