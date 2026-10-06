@@ -5,6 +5,7 @@ import '../services/auth_service.dart';
 import '../utils/countries.dart';
 import '../utils/phone_rule.dart';
 import '../utils/session.dart';
+import 'privacy_policy_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -125,7 +126,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
               const SizedBox(height: 14),
               TextField(
                 controller: _phoneCtrl,
-                keyboardType: TextInputType.phone,
+                // A plain number keypad, not TextInputType.phone. The phone
+                // type makes Chrome and Android offer their autofill service,
+                // which drops the device's whole contact list over the field.
+                // This one only ever holds digits.
+                keyboardType: TextInputType.number,
                 textInputAction: TextInputAction.next,
                 // A single limiter. Having both maxLength and an explicit
                 // LengthLimitingTextInputFormatter made the field fight itself.
@@ -133,6 +138,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   FilteringTextInputFormatter.digitsOnly,
                   LengthLimitingTextInputFormatter(PhoneRule.max),
                 ],
+                // Keeps the saved-numbers dropdown away, which is what
+                // TextInputType.phone was pulling in.
+                autofillHints: const <String>[],
+                enableSuggestions: false,
+                autocorrect: false,
+                enableIMEPersonalizedLearning: false,
                 onChanged: (_) => setState(() {}),
                 decoration: InputDecoration(
                   labelText: 'Phone number',
@@ -218,6 +229,25 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         ),
                       ),
                     ),
+              const SizedBox(height: 6),
+              // Says plainly what happens to the details typed above, before
+              // they are typed rather than after.
+              TextButton.icon(
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const PrivacyPolicyScreen(),
+                  ),
+                ),
+                icon: const Icon(Icons.privacy_tip_outlined, size: 16),
+                label: const Text(
+                  'What happens to my details? Read the Privacy Policy',
+                  textAlign: TextAlign.center,
+                ),
+                style: TextButton.styleFrom(
+                  textStyle: const TextStyle(fontSize: 12),
+                ),
+              ),
             ],
           ),
         ),

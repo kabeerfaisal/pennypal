@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../theme/app_theme.dart';
+import 'dashboard_shell_scope.dart';
 import 'pennypal_logo.dart';
 
 /// White rounded surface with the mockup's soft lift.
@@ -56,11 +57,18 @@ class SurfaceCard extends StatelessWidget {
 /// The action is a compact outlined pill rather than a bare text button, so it
 /// reads as a corner affordance on every section and stays visible against any
 /// card behind it.
+///
+/// Pass [actionTab] to make the link jump to a dashboard tab. That is the whole
+/// point of most of these headers, and routing it through the shell scope means
+/// the link works without every call site wiring a callback by hand.
 class SectionHeader extends StatelessWidget {
   final String title;
   final String? actionLabel;
   final VoidCallback? onAction;
   final IconData actionIcon;
+
+  /// When set, the action switches the shell to this tab.
+  final int? actionTab;
 
   const SectionHeader({
     super.key,
@@ -68,12 +76,22 @@ class SectionHeader extends StatelessWidget {
     this.actionLabel,
     this.onAction,
     this.actionIcon = Icons.arrow_forward_rounded,
+    this.actionTab,
   });
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final isDark = cs.brightness == Brightness.dark;
+
+    // Read the scope only when a tab was requested, so a header used outside
+    // the shell (as in tests) does not pull the inherited widget in.
+    final tab = actionTab;
+    final handler =
+        onAction ??
+        (tab == null
+            ? null
+            : () => DashboardShellScope.of(context).goToTab(tab));
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
@@ -103,14 +121,19 @@ class SectionHeader extends StatelessWidget {
             // of squeezing the title off a narrow screen.
             ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 170),
+              // A Material with a transparent colour would sit between the
+              // InkWell and the card below and swallow nothing, but an opaque
+              // one is what gives the ink splash a surface to paint on.
               child: Material(
                 color: isDark
                     ? Colors.white10
                     : cs.primary.withValues(alpha: 0.10),
                 borderRadius: BorderRadius.circular(AppRadius.pill),
+                clipBehavior: Clip.antiAlias,
                 child: InkWell(
                   borderRadius: BorderRadius.circular(AppRadius.pill),
-                  onTap: onAction,
+                  // Not shrinkWrap: a full-size target is why the tap lands.
+                  onTap: handler,
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(12, 7, 10, 7),
                     child: Row(

@@ -38,10 +38,7 @@ class AppUser {
       role: UserRole.fromData(data),
       currency: data['Currency'] ?? data['currency'] ?? 'USD',
       theme: data['Theme'] ?? data['theme'] ?? 'Green',
-      monthlyBudget: asMoney(
-        data['MonthlyBudget'] ?? data['monthlyBudget'],
-        2000,
-      ),
+      monthlyBudget: asMoney(data['MonthlyBudget'] ?? data['monthlyBudget'], 0),
       isSuspended: data['IsSuspended'] == true,
       suspendedReason: data['SuspendedReason'] ?? '',
     );

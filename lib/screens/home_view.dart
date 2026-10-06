@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../controllers/finance_controller.dart';
+import '../services/app_tour.dart';
 import '../theme/app_theme.dart';
+import '../widgets/dashboard_shell_scope.dart';
 import '../widgets/ui_kit.dart';
 import 'add_transaction_screen.dart';
 import 'ai_chatbot_screen.dart';
@@ -35,47 +37,53 @@ class HomeView extends StatelessWidget {
           ),
           children: [
             // The in-body top bar. Its AI chip is the live link to the advisor.
-            WelcomeBanner(
-              name: c.userName,
-              role: c.userRole,
-              onTapAi: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const AIChatbotScreen()),
+            TourKeys.wrap(
+              TourAnchors.aiLink,
+              WelcomeBanner(
+                name: c.userName,
+                role: c.userRole,
+                onTapAi: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const AIChatbotScreen()),
+                ),
               ),
             ),
 
             const SizedBox(height: AppSpace.gap),
 
             // Three headline numbers, as in the mockup.
-            Row(
-              children: [
-                Expanded(
-                  child: StatCard(
-                    label: 'Available Balance',
-                    value: '$sym${(income - expenses).toStringAsFixed(2)}',
-                    icon: Icons.account_balance_wallet_rounded,
-                    color: AppColors.brand,
+            TourKeys.wrap(
+              TourAnchors.statCards,
+              Row(
+                children: [
+                  Expanded(
+                    child: StatCard(
+                      label: 'Available Balance',
+                      value: '$sym${(income - expenses).toStringAsFixed(2)}',
+                      icon: Icons.account_balance_wallet_rounded,
+                      color: AppColors.brand,
+                    ),
                   ),
-                ),
-                const SizedBox(width: AppSpace.gap),
-                Expanded(
-                  child: StatCard(
-                    label: 'Monthly Spent',
-                    value: '$sym${expenses.toStringAsFixed(2)}',
-                    icon: Icons.trending_down_rounded,
-                    color: AppColors.expense,
+                  const SizedBox(width: AppSpace.gap),
+                  Expanded(
+                    child: StatCard(
+                      label: 'Monthly Spent',
+                      value: '$sym${expenses.toStringAsFixed(2)}',
+                      icon: Icons.trending_down_rounded,
+                      color: AppColors.expense,
+                    ),
                   ),
-                ),
-                const SizedBox(width: AppSpace.gap),
-                Expanded(
-                  child: StatCard(
-                    label: 'Total Income',
-                    value: '$sym${income.toStringAsFixed(2)}',
-                    icon: Icons.trending_up_rounded,
-                    color: AppColors.income,
+                  const SizedBox(width: AppSpace.gap),
+                  Expanded(
+                    child: StatCard(
+                      label: 'Total Income',
+                      value: '$sym${income.toStringAsFixed(2)}',
+                      icon: Icons.trending_up_rounded,
+                      color: AppColors.income,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
 
             const SizedBox(height: AppSpace.section),
@@ -83,8 +91,7 @@ class HomeView extends StatelessWidget {
             SectionHeader(
               title: 'Savings Goals',
               actionLabel: c.savingGoals.isEmpty ? null : 'View All',
-              onAction: () =>
-                  DashboardScreen.goToTab(DashboardScreen.tabSavings),
+              actionTab: DashboardScreen.tabSavings,
             ),
             if (c.savingGoals.isEmpty)
               SurfaceCard(
@@ -157,8 +164,7 @@ class HomeView extends StatelessWidget {
               actionLabel: c.categorySpendThisMonth().isEmpty
                   ? null
                   : 'All History',
-              onAction: () =>
-                  DashboardScreen.goToTab(DashboardScreen.tabTransactions),
+              actionTab: DashboardScreen.tabTransactions,
             ),
             if (c.categorySpendThisMonth().isEmpty)
               SurfaceCard(
@@ -196,150 +202,223 @@ class HomeView extends StatelessWidget {
 
             const SizedBox(height: AppSpace.section),
 
-            SectionHeader(
-              title: 'Monthly Budget',
-              actionLabel: 'View Budget',
-              onAction: () =>
-                  DashboardScreen.goToTab(DashboardScreen.tabBudget),
-            ),
-            SurfaceCard(
-              child: Column(
-                children: [
-                  ProgressRing(
-                    value: percent,
-                    centerValue:
-                        '$sym${expenses.toStringAsFixed(0)} / $sym${budget.toStringAsFixed(0)}',
-                    caption: 'spent this month',
-                    color: percent > 0.9 ? AppColors.expense : AppColors.brand,
-                    badge:
-                        '${(percent * 100).clamp(0, 999).toStringAsFixed(0)}% used',
-                    size: 168,
-                  ),
-                  const SizedBox(height: 18),
-                  Row(
+            // A new account has no budget. Showing "0 / 0 spent" and a "0%
+            // used" ring would read as though they had blown their limit, so
+            // the card asks for one instead.
+            if (budget <= 0)
+              TourKeys.wrap(
+                TourAnchors.budget,
+                SurfaceCard(
+                  child: Row(
                     children: [
-                      Expanded(
-                        child: LabeledStat(
-                          label: 'Total Limit',
-                          value: '$sym${budget.toStringAsFixed(0)}',
-                          color: AppColors.textPrimary,
-                          align: CrossAxisAlignment.center,
+                      Container(
+                        width: 46,
+                        height: 46,
+                        decoration: BoxDecoration(
+                          color: isDark ? Colors.white10 : AppColors.brandTint,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Icon(
+                          Icons.donut_large_rounded,
+                          color: AppColors.brand,
+                          size: 22,
                         ),
                       ),
-                      _divider(muted),
+                      const SizedBox(width: 14),
                       Expanded(
-                        child: LabeledStat(
-                          label: 'Spent',
-                          value: '$sym${expenses.toStringAsFixed(0)}',
-                          color: AppColors.expense,
-                          align: CrossAxisAlignment.center,
-                        ),
-                      ),
-                      _divider(muted),
-                      Expanded(
-                        child: LabeledStat(
-                          label: 'Remaining',
-                          value:
-                              '$sym${(budget - expenses).clamp(0, budget).toStringAsFixed(0)}',
-                          color: AppColors.income,
-                          align: CrossAxisAlignment.center,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-
-            if (c.transactions.isNotEmpty) ...[
-              const SizedBox(height: AppSpace.section),
-              SectionHeader(
-                title: 'Recent Transactions',
-                actionLabel: 'View All',
-                onAction: () =>
-                    DashboardScreen.goToTab(DashboardScreen.tabTransactions),
-              ),
-              ...c.transactions
-                  .take(5)
-                  .map(
-                    (tx) => Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: SurfaceCard(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 12,
-                        ),
-                        onTap: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => AddTransactionScreen(existing: tx),
-                          ),
-                        ),
-                        child: Row(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
                           children: [
-                            Container(
-                              width: 38,
-                              height: 38,
-                              decoration: BoxDecoration(
-                                color: AppColors.tint(
-                                  tx.isExpense
-                                      ? AppColors.expense
-                                      : AppColors.income,
-                                ),
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: Icon(
-                                tx.isExpense
-                                    ? Icons.arrow_downward_rounded
-                                    : Icons.arrow_upward_rounded,
-                                size: 18,
-                                color: tx.isExpense
-                                    ? AppColors.expense
-                                    : AppColors.income,
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text(
-                                    tx.title,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.w700,
-                                      fontSize: 14.5,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 1),
-                                  Text(
-                                    tx.category,
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: muted,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              '${tx.isExpense ? "-" : "+"}$sym${tx.amount.toStringAsFixed(2)}',
+                            const Text(
+                              'No budget set yet',
                               style: TextStyle(
-                                fontWeight: FontWeight.w800,
                                 fontSize: 15,
-                                color: tx.isExpense
-                                    ? AppColors.expense
-                                    : AppColors.income,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              'Set a monthly limit and we will warn you before '
+                              'you cross it.',
+                              style: TextStyle(
+                                fontSize: 12.5,
+                                height: 1.35,
+                                color: muted,
                               ),
                             ),
                           ],
                         ),
                       ),
-                    ),
+                      const SizedBox(width: 10),
+                      FilledButton.icon(
+                        onPressed: () =>
+                            DashboardShellScope.of(context)
+                                .goToTab(DashboardScreen.tabBudget),
+                        style: FilledButton.styleFrom(
+                          minimumSize: const Size(0, 40),
+                          padding: const EdgeInsets.symmetric(horizontal: 14),
+                        ),
+                        icon: const Icon(Icons.add_rounded, size: 18),
+                        label: const Text('Set'),
+                      ),
+                    ],
                   ),
+                ),
+              )
+            else
+              TourKeys.wrap(
+                TourAnchors.budget,
+                SurfaceCard(
+                  child: Column(
+                    children: [
+                      ProgressRing(
+                        value: percent,
+                        centerValue:
+                            '$sym${expenses.toStringAsFixed(0)} / $sym${budget.toStringAsFixed(0)}',
+                        caption: 'spent this month',
+                        color: percent > 0.9
+                            ? AppColors.expense
+                            : AppColors.brand,
+                        badge:
+                            '${(percent * 100).clamp(0, 999).toStringAsFixed(0)}% used',
+                        size: 168,
+                      ),
+                      const SizedBox(height: 18),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: LabeledStat(
+                              label: 'Total Limit',
+                              value: '$sym${budget.toStringAsFixed(0)}',
+                              color: AppColors.textPrimary,
+                              align: CrossAxisAlignment.center,
+                            ),
+                          ),
+                          _divider(muted),
+                          Expanded(
+                            child: LabeledStat(
+                              label: 'Spent',
+                              value: '$sym${expenses.toStringAsFixed(0)}',
+                              color: AppColors.expense,
+                              align: CrossAxisAlignment.center,
+                            ),
+                          ),
+                          _divider(muted),
+                          Expanded(
+                            child: LabeledStat(
+                              label: 'Remaining',
+                              value:
+                                  '$sym${(budget - expenses).clamp(0, budget).toStringAsFixed(0)}',
+                              color: AppColors.income,
+                              align: CrossAxisAlignment.center,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+            if (c.transactions.isNotEmpty) ...[
+              const SizedBox(height: AppSpace.section),
+              TourKeys.wrap(
+                TourAnchors.recent,
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    SectionHeader(
+                      title: 'Recent Transactions',
+                      actionLabel: 'View All',
+                      actionTab: DashboardScreen.tabTransactions,
+                    ),
+                    ...c.transactions
+                        .take(5)
+                        .map(
+                          (tx) => Padding(
+                            padding: const EdgeInsets.only(bottom: 8),
+                            child: SurfaceCard(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                                vertical: 12,
+                              ),
+                              onTap: () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) =>
+                                      AddTransactionScreen(existing: tx),
+                                ),
+                              ),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    width: 38,
+                                    height: 38,
+                                    decoration: BoxDecoration(
+                                      color: AppColors.tint(
+                                        tx.isExpense
+                                            ? AppColors.expense
+                                            : AppColors.income,
+                                      ),
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    child: Icon(
+                                      tx.isExpense
+                                          ? Icons.arrow_downward_rounded
+                                          : Icons.arrow_upward_rounded,
+                                      size: 18,
+                                      color: tx.isExpense
+                                          ? AppColors.expense
+                                          : AppColors.income,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Text(
+                                          tx.title,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.w700,
+                                            fontSize: 14.5,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 1),
+                                        Text(
+                                          tx.category,
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: muted,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    '${tx.isExpense ? "-" : "+"}$sym${tx.amount.toStringAsFixed(2)}',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w800,
+                                      fontSize: 15,
+                                      color: tx.isExpense
+                                          ? AppColors.expense
+                                          : AppColors.income,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                  ],
+                ),
+              ),
             ],
 
             const SizedBox(height: AppSpace.gap),

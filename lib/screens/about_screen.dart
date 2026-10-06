@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../widgets/developers_section.dart';
+import '../widgets/pennypal_logo.dart';
+import 'privacy_policy_screen.dart';
 
 class AboutScreen extends StatelessWidget {
   const AboutScreen({super.key});
@@ -13,7 +15,11 @@ class AboutScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
-          Icon(Icons.savings_rounded, size: 72, color: cs.primary),
+          PennyPalLogo(
+            size: 88,
+            background: cs.primary.withValues(alpha: 0.14),
+            foreground: cs.primary,
+          ),
           const SizedBox(height: 12),
           Text(
             'PennyPal',
@@ -49,13 +55,29 @@ class AboutScreen extends StatelessWidget {
           _card(
             'How it stays useful',
             'Data lives in your Firebase account so totals, goals, and limits stay in sync. '
-                'Spending and savings alerts appear as in-app banners, so no notification permission is needed. '
+                'Budget and savings alerts appear both in the app and as notifications on your phone, '
+                'without any remote push service. '
                 'Receipt photos are compressed and saved with the transaction. '
-                'Green and dark themes keep the same layout.',
+                'Light and dark themes keep the same layout.',
           ),
           _card(
             'Roles',
             'Students use the main app for money tracking. Admins get a separate panel to manage users, learning lessons, and student feedback.',
+          ),
+          const SizedBox(height: 8),
+          const Divider(),
+          // Privacy has to be reachable before sign in as well, not only from
+          // inside the app, so it is a real button rather than a line of text.
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            child: OutlinedButton.icon(
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const PrivacyPolicyScreen()),
+              ),
+              icon: const Icon(Icons.privacy_tip_outlined, size: 18),
+              label: const Text('Read our Privacy Policy'),
+            ),
           ),
           const SizedBox(height: 8),
           const Divider(),

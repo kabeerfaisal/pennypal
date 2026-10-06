@@ -232,7 +232,7 @@ class AdminHome extends StatelessWidget {
                           const Expanded(
                             child: Text(
                               'Manage students in the Users tab: change a role, '
-                              'or delete an account.',
+                              'or suspend an account.',
                               style: TextStyle(fontSize: 13, height: 1.45),
                             ),
                           ),

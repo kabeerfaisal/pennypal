@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 import '../utils/session.dart';
 import '../widgets/pennypal_logo.dart';
+import 'privacy_policy_screen.dart';
 import 'register_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -175,6 +176,22 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: Text(
                   "Don't have an account? Register",
                   style: TextStyle(color: cs.primary),
+                ),
+              ),
+              const SizedBox(height: 4),
+              // Reachable before sign in, which is where a privacy notice
+              // belongs.
+              TextButton.icon(
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const PrivacyPolicyScreen(),
+                  ),
+                ),
+                icon: const Icon(Icons.privacy_tip_outlined, size: 16),
+                label: const Text('Privacy Policy'),
+                style: TextButton.styleFrom(
+                  textStyle: const TextStyle(fontSize: 12.5),
                 ),
               ),
             ],

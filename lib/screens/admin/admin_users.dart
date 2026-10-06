@@ -283,8 +283,8 @@ class AdminUserDetail extends StatelessWidget {
                   const SizedBox(width: 6),
                   Expanded(
                     child: Text(
-                      'This is your own account. Suspend, delete and role '
-                      'changes are disabled.',
+                      'This is your own account. Suspend and role changes are '
+                      'disabled.',
                       style: TextStyle(
                         fontSize: 11.5,
                         height: 1.35,
@@ -298,44 +298,44 @@ class AdminUserDetail extends StatelessWidget {
             const SizedBox(height: 16),
             const Divider(),
             const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: self
-                        ? null
-                        : () => _toggleSuspend(context, user),
-                    icon: Icon(
-                      user.isSuspended
-                          ? Icons.lock_open_rounded
-                          : Icons.block_rounded,
-                      size: 18,
-                    ),
-                    label: Text(
-                      user.isSuspended ? 'Restore access' : 'Suspend',
-                    ),
-                  ),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: self ? null : () => _toggleSuspend(context, user),
+                icon: Icon(
+                  user.isSuspended
+                      ? Icons.lock_open_rounded
+                      : Icons.block_rounded,
+                  size: 18,
                 ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: FilledButton.icon(
-                    onPressed: self
-                        ? null
-                        : () => _confirmDelete(context, user),
-                    style: FilledButton.styleFrom(
-                      backgroundColor: AppColors.expense,
-                      disabledBackgroundColor: isDark
-                          ? AppColors.black3
-                          : AppColors.border,
-                      disabledForegroundColor: isDark
-                          ? Colors.white38
-                          : AppColors.textMuted,
-                    ),
-                    icon: const Icon(Icons.delete_outline_rounded, size: 18),
-                    label: const Text('Delete'),
-                  ),
+                label: Text(user.isSuspended ? 'Restore access' : 'Suspend'),
+              ),
+            ),
+            const SizedBox(height: 10),
+            // There is deliberately no Delete button here. Deleting somebody
+            // else's account is the one thing an app cannot finish: Firebase
+            // gives clients no way to remove another user's sign-in, so the
+            // email would stay taken and the student could not register again.
+            // Offering a button that half works is worse than not offering one.
+            // A student removes their own account from Profile, which does the
+            // whole job including the sign-in.
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: (isDark ? Colors.white60 : AppColors.textMuted)
+                    .withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(AppRadius.chip),
+              ),
+              child: Text(
+                'Students delete their own account from Profile, which also '
+                'removes their sign-in and frees the email.',
+                style: TextStyle(
+                  fontSize: 11.5,
+                  height: 1.4,
+                  color: isDark ? Colors.white54 : AppColors.textMuted,
                 ),
-              ],
+              ),
             ),
           ],
         ),
@@ -423,9 +423,10 @@ class AdminUserDetail extends StatelessWidget {
       return;
     }
 
-    final reasonCtrl = TextEditingController(
-      text: 'Repeated policy violations',
-    );
+    // Captured through the callback rather than a controller owned here, so
+    // dismissing the dialog with the back button cannot leave a disposed
+    // controller attached to a field that is still animating away.
+    var reason = 'Repeated policy violations';
     final confirmed = await ConfirmDialog.show(
       context,
       title: 'Suspend this account?',
@@ -435,19 +436,13 @@ class AdminUserDetail extends StatelessWidget {
       confirmLabel: 'Suspend',
       color: AppColors.expense,
       icon: Icons.block_rounded,
-      field: TextField(
-        controller: reasonCtrl,
-        maxLines: 2,
-        decoration: const InputDecoration(
-          labelText: 'Reason (shown to the user)',
-          alignLabelWithHint: true,
-        ),
-      ),
+      fieldLabel: 'Reason (shown to the user)',
+      initialFieldValue: reason,
+      onFieldChanged: (v) => reason = v,
     );
 
-    final reason = reasonCtrl.text.trim();
-    reasonCtrl.dispose();
     if (!confirmed || !context.mounted) return;
+    reason = reason.trim();
 
     try {
       await AdminService.instance.setSuspended(user.id, true, reason: reason);
@@ -465,35 +460,6 @@ class AdminUserDetail extends StatelessWidget {
       messenger.showSnackBar(SnackBar(content: Text(e.message)));
     } catch (e) {
       messenger.showSnackBar(SnackBar(content: Text('Could not suspend: $e')));
-    }
-  }
-
-  /// Deleting is permanent, so it is confirmed rather than a single tap.
-  Future<void> _confirmDelete(BuildContext context, AppUser user) async {
-    final messenger = ScaffoldMessenger.of(context);
-    final label = user.fullName.isEmpty ? user.email : user.fullName;
-
-    final confirmed = await ConfirmDialog.show(
-      context,
-      title: 'Delete this account?',
-      message:
-          '$label will be signed out and their transactions, goals and '
-          'profile will be permanently removed. This cannot be undone.',
-      confirmLabel: 'Delete permanently',
-      color: AppColors.expense,
-      icon: Icons.delete_forever_rounded,
-    );
-    if (!confirmed || !context.mounted) return;
-
-    messenger.showSnackBar(const SnackBar(content: Text('Deleting...')));
-    try {
-      await AdminService.instance.deleteUser(user.id);
-      messenger.showSnackBar(SnackBar(content: Text('$label deleted')));
-      if (context.mounted) Navigator.pop(context);
-    } on AdminActionException catch (e) {
-      messenger.showSnackBar(SnackBar(content: Text(e.message)));
-    } catch (e) {
-      messenger.showSnackBar(SnackBar(content: Text('Could not delete: $e')));
     }
   }
 }

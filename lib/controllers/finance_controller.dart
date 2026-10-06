@@ -19,6 +19,11 @@ class FinanceController extends ChangeNotifier {
   static final FinanceController instance = FinanceController._();
   FinanceController._();
 
+  /// A new account starts with no budget set. Guessing a number for a student
+  /// is presumptuous, and a wrong figure would immediately read as "over
+  /// budget". They set their own on the Budget tab.
+  static const double defaultBudget = 0;
+
   final FirebaseFirestore _db = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
@@ -26,7 +31,7 @@ class FinanceController extends ChangeNotifier {
 
   List<TransactionModel> _transactions = [];
   List<SavingGoal> _savingGoals = [];
-  double _monthlyBudget = 2000;
+  double _monthlyBudget = defaultBudget;
   String _currency = 'USD';
   // Only green and dark remain; the yellow theme was removed. A stored
   // 'Yellow' value now falls back to green.
@@ -280,7 +285,7 @@ class FinanceController extends ChangeNotifier {
     if (_claimAdmin) _userRole = 'Admin';
     _monthlyBudget = asMoney(
       data['MonthlyBudget'] ?? data['monthlyBudget'],
-      2000,
+      defaultBudget,
     );
     _categoryLimits = {};
     final rawLimits = data['CategoryLimits'] ?? data['categoryLimits'];
@@ -493,11 +498,11 @@ class FinanceController extends ChangeNotifier {
   }
 
   /// Removes the monthly budget entirely, as the SRS asks for delete as well
-  /// as update. Defaults back to the starting value so the UI stays sane.
+  /// as update. Clears it back to unset rather than inventing a figure.
   Future<void> clearBudget() async {
-    _monthlyBudget = 2000;
+    _monthlyBudget = defaultBudget;
     notifyListeners();
-    await _userDoc?.update({'MonthlyBudget': 2000});
+    await _userDoc?.update({'MonthlyBudget': defaultBudget});
   }
 
   Future<void> updateProfile({
@@ -534,7 +539,7 @@ class FinanceController extends ChangeNotifier {
     _currency = 'USD';
     _isYellowTheme = false;
     _isDarkTheme = false;
-    _monthlyBudget = 2000;
+    _monthlyBudget = defaultBudget;
     _categoryLimits = {};
     _ready = false;
     _boundUid = null;

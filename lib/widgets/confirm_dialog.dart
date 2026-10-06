@@ -29,6 +29,14 @@ class ConfirmDialog extends StatelessWidget {
   });
 
   /// Shows the dialog and resolves to true only when confirmed.
+  ///
+  /// [textField] builds the single-line entry the dialog needs and hands the
+  /// typed value to [onFieldChanged] on every keystroke. It is offered instead
+  /// of a caller-owned [TextEditingController] because a controller created
+  /// outside and disposed right after `showDialog` returns is still referenced
+  /// by the field while the route animates away, which throws
+  /// "A TextEditingController was used after being disposed" whenever the
+  /// student dismissed the dialog with the back button.
   static Future<bool> show(
     BuildContext context, {
     required String title,
@@ -38,6 +46,10 @@ class ConfirmDialog extends StatelessWidget {
     Color color = const Color(0xFFDC2626),
     IconData? icon,
     Widget? field,
+    String? fieldLabel,
+    String? fieldHint,
+    String initialFieldValue = '',
+    void Function(String value)? onFieldChanged,
   }) async {
     final result = await showDialog<bool>(
       context: context,
@@ -48,7 +60,16 @@ class ConfirmDialog extends StatelessWidget {
         cancelLabel: cancelLabel,
         color: color,
         icon: icon,
-        field: field,
+        field:
+            field ??
+            (fieldLabel == null
+                ? null
+                : _TextFieldCapture(
+                    label: fieldLabel,
+                    hint: fieldHint,
+                    initialValue: initialFieldValue,
+                    onChanged: onFieldChanged,
+                  )),
       ),
     );
     return result == true;
@@ -178,6 +199,57 @@ class ConfirmDialog extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// A stateful single-line field that reports what was typed.
+///
+/// Owns its own [TextEditingController] and disposes it in the same State, so
+/// the controller's lifetime always matches the widget's. A controller held by
+/// the caller outlives neither the route nor the exit animation safely, which
+/// is what produced the crash when the dialog was dismissed.
+class _TextFieldCapture extends StatefulWidget {
+  final String label;
+  final String? hint;
+  final String initialValue;
+  final void Function(String value)? onChanged;
+
+  const _TextFieldCapture({
+    required this.label,
+    this.hint,
+    this.initialValue = '',
+    this.onChanged,
+  });
+
+  @override
+  State<_TextFieldCapture> createState() => _TextFieldCaptureState();
+}
+
+class _TextFieldCaptureState extends State<_TextFieldCapture> {
+  late final TextEditingController _ctrl = TextEditingController(
+    text: widget.initialValue,
+  );
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return TextField(
+      controller: _ctrl,
+      maxLines: 2,
+      minLines: 1,
+      textCapitalization: TextCapitalization.sentences,
+      decoration: InputDecoration(
+        labelText: widget.label,
+        hintText: widget.hint,
+        alignLabelWithHint: true,
+      ),
+      onChanged: (v) => widget.onChanged?.call(v),
     );
   }
 }

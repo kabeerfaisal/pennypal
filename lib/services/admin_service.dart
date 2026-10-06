@@ -80,31 +80,51 @@ class AdminService {
     });
   }
 
-  /// Removes a user and everything nested under them: transactions, goals and
-  /// the profile document. Firestore does not cascade, so this is explicit.
-  Future<void> deleteUser(String userId) async {
-    if (userId == FirebaseAuth.instance.currentUser?.uid) {
-      throw AdminActionException('You cannot delete your own account');
-    }
+  /// Wipes everything stored for a user: their transactions, goals, profile,
+  /// notifications, AI chats and feedback.
+  ///
+  /// This does not touch the Firebase Authentication record, and nothing in the
+  /// app can. The client SDKs deliberately expose no way to remove somebody
+  /// else's sign-in, since otherwise any signed-in user could delete any other
+  /// account.
+  ///
+  /// Kept because a suspended student who asks for their data to be cleared
+  /// still needs it, and because [AuthService.deleteCurrentAccount] runs the
+  /// same sweep once the sign-in is gone. It is deliberately not wired to any
+  /// button: the admin panel has no Delete, since a button that removes the
+  /// data but leaves the email taken reads as broken. The one deletion a
+  /// student can start themselves lives in the profile screen.
+  Future<void> deleteUserData(String userId) async {
     final ref = _db.collection('Users').doc(userId);
-    for (final sub in const ['Transactions', 'SavingGoals', 'Profile']) {
+    for (final sub in const [
+      'Transactions',
+      'SavingGoals',
+      'Profile',
+      'Notifications',
+    ]) {
       final snap = await ref.collection(sub).get();
       for (final doc in snap.docs) {
         await doc.reference.delete();
       }
     }
+    final chats = await ref.collection('Chats').get();
+    for (final chat in chats.docs) {
+      final messages = await chat.reference.collection('Messages').get();
+      for (final m in messages.docs) {
+        await m.reference.delete();
+      }
+      await chat.reference.delete();
+    }
     await ref.delete();
 
     // Queries and feedback are owned by the user through a UserId field, not a
     // subcollection, so they are removed in batches.
-    for (final field in const ['Feedbacks']) {
-      final snap = await _db
-          .collection(field)
-          .where('UserId', isEqualTo: userId)
-          .get();
-      for (final doc in snap.docs) {
-        await doc.reference.delete();
-      }
+    final snap = await _db
+        .collection('Feedbacks')
+        .where('UserId', isEqualTo: userId)
+        .get();
+    for (final doc in snap.docs) {
+      await doc.reference.delete();
     }
   }
 
