@@ -10,7 +10,7 @@ We also included an AI advisor that does not just give generic advice. It uses y
 
 Under the hood, it is built with Flutter for Android, iOS, and Web, with Firebase handling the backend.
 
-git hub "https://github.com/hashir-build/pennypal.git"
+git hub "https://github.com/kabeerfaisal/pennypal.git"
 user credential 
 (email : sooraj@gmail.com  password: 123456789)
 Table of contents
